@@ -2,16 +2,7 @@
 
 A [Claude Code](https://claude.com/claude-code) mod that shows your repository's open pull requests that are **ready to merge**, in a small band just above the prompt.
 
-```text
-  … conversation …
-
-  ✓ 2 ready to merge · 3 not ready
-    #42 Add dark mode  feat/dark-mode · approved
-    #45 Bump eslint to 9  deps/eslint-9
- ╭──────────────────────────────────────────────────────────╮
- │ >                                                        │
- ╰──────────────────────────────────────────────────────────╯
-```
+![The ready-prs band above the Claude Code prompt, listing two pull requests ready to merge](docs/images/some-ready.png)
 
 The band appears only when something is ready, so it takes no space the rest of the time. It refreshes every two minutes, and `/ready-prs` checks right away.
 
@@ -68,30 +59,21 @@ claude plugin uninstall ready-prs
 
 The band has four states.
 
-**Some PRs are ready.** A summary line, then one row per ready PR: its number (a link to the PR on GitHub), its title, its branch, and whether it was approved.
+**Some PRs are ready.** A summary line, then one row per ready PR: its number (a link to the PR on GitHub), its title, its branch, and whether it was approved. The status line repeats the count.
 
-```text
-✓ 1 ready to merge · 2 not ready
-  #12 Add dark mode  feat/dark-mode · approved
-```
+![Two PRs ready to merge and three not ready](docs/images/some-ready.png)
 
 **Many PRs are ready.** The band lists the first three, which you can change with [`maxRows`](#settings), and counts the rest.
 
-```text
-✓ 5 ready to merge
-  #31 Fix login redirect  fix/login-redirect · approved
-  #32 Cache avatars  perf/avatars · approved
-  #34 Add CSV export  feat/csv-export
-  +2 more
-```
+![Five PRs ready: three rows, then +2 more](docs/images/many-ready.png)
 
 **Nothing is ready.** There's no band at all. The prompt sits where it always does.
 
+![No band: only the conversation and the prompt](docs/images/nothing-ready.png)
+
 **`gh` failed.** One red line, so a broken setup never looks like "nothing to merge":
 
-```text
-ready-prs: gh failed: To get started with GitHub CLI, please run:  gh auth login
-```
+![A red line reading: ready-prs: gh failed: To get started with GitHub CLI, please run: gh auth login](docs/images/gh-failed.png)
 
 When a check fails, the band keeps showing the last list it got, so a network blip doesn't wipe it out.
 
@@ -100,6 +82,10 @@ The status line also shows `N PRs ready to merge` while any are ready. The band 
 ## The `/ready-prs` command
 
 `/ready-prs` asks GitHub right away instead of waiting for the next check, and answers in the transcript:
+
+![Typing /ready-prs prints the ready PRs in the transcript](docs/images/command.png)
+
+It answers in one of three ways:
 
 ```text
 > /ready-prs
@@ -242,6 +228,7 @@ To type-check, run `tsc -p .`. The `tsconfig.json` extends the types Claude Code
 | `hooks/register.tsx` | The mod: polling, the command, the band |
 | `types/index.d.ts` | Types for the stored snapshot (`PluginState`) |
 | `tests/band.test.tsx` | Tests |
+| `docs/images/` | The screenshots in this README (mockups of the terminal) |
 
 ## License
 
