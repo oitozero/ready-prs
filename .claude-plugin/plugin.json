@@ -1,0 +1,30 @@
+{
+  "name": "ready-prs",
+  "version": "1.0.0",
+  "description": "Shows the repository's open pull requests that are ready to merge, just above the prompt",
+  "author": { "name": "Pedro Sampaio" },
+  "license": "MIT",
+  "keywords": ["github", "pull-requests", "merge", "gh"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "readiness": {
+      "type": "string",
+      "title": "Readiness rule",
+      "description": "clean: GitHub reports the PR as CLEAN. clean-or-unstable: also count PRs whose only failures are optional checks. approved: CLEAN and approved by a reviewer.",
+      "options": ["clean", "clean-or-unstable", "approved"],
+      "default": "clean"
+    },
+    "maxRows": {
+      "type": "number",
+      "title": "Rows shown",
+      "description": "How many ready PRs the band lists before it says +N more (1 to 10).",
+      "default": 3
+    },
+    "pollMinutes": {
+      "type": "number",
+      "title": "Check every (minutes)",
+      "description": "How often the mod asks GitHub again. /ready-prs checks right away.",
+      "default": 2
+    }
+  }
+}

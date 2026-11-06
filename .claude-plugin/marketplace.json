@@ -1,0 +1,12 @@
+{
+  "name": "ready-prs",
+  "owner": { "name": "Pedro Sampaio" },
+  "description": "A Claude Code mod that lists the open pull requests ready to merge, just above the prompt",
+  "plugins": [
+    {
+      "name": "ready-prs",
+      "source": "./",
+      "description": "Shows the repository's open pull requests that are ready to merge, just above the prompt"
+    }
+  ]
+}
