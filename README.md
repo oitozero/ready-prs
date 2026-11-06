@@ -2,7 +2,7 @@
 
 A [Claude Code](https://claude.com/claude-code) mod that shows your repository's open pull requests that are **ready to merge**, and the ones **waiting for your review**, in a small band just above the prompt.
 
-![Animation: PRs turn ready and the band above the prompt lists them, /ready-prs checks on demand, and the band disappears once they are merged](docs/images/ready-prs.gif)
+![Animation: PRs turn ready and a review request arrives, the band above the prompt lists them, /ready-prs checks on demand, and the band disappears once the PRs are merged and the review is done](docs/images/ready-prs.gif)
 
 The band appears only when something needs you, so it takes no space the rest of the time. It refreshes every two minutes, and `/ready-prs` checks right away. ([Full-resolution MP4](docs/images/ready-prs.mp4))
 
@@ -59,23 +59,19 @@ claude plugin uninstall ready-prs
 
 The band has five states.
 
-**Some PRs are ready.** A summary line, then one row per ready PR: its number (a link to the PR on GitHub), its title, its branch, and whether it was approved. The status line repeats the count.
+**Some PRs are ready.** A summary line, then one row per ready PR: its number (a link to the PR on GitHub), its title, its branch, and whether it was approved. The status line repeats the counts.
 
-![Two PRs ready to merge and three not ready](docs/images/some-ready.png)
+![Two PRs ready to merge and three not ready, then a yellow line: 2 waiting for your review](docs/images/some-ready.png)
 
 **Many PRs are ready.** The band lists the first three, which you can change with [`maxRows`](#settings), and counts the rest.
 
 ![Five PRs ready: three rows, then +2 more](docs/images/many-ready.png)
 
-**PRs are waiting for your review.** One extra line, in yellow, under any ready PRs. It links the first three and counts the rest. It shows even when nothing is ready to merge, because a review someone is waiting on is also something to do.
+**PRs are waiting for your review.** One extra line, in yellow, under any ready PRs, as in the first picture above. It links the first three and counts the rest. It shows even when nothing is ready to merge, because a review someone is waiting on is also something to do:
 
-```text
-✓ 1 ready to merge · 2 not ready
-  #42 Add dark mode  feat/dark-mode · approved
-◆ 4 waiting for your review: #51 #53 #54 +1
-```
+![Nothing ready to merge, and a yellow line: 4 waiting for your review: #51 #53 #54 +1](docs/images/reviews.png)
 
-The status line reads `1 PR ready to merge · 4 to review`. Turn the line off with [`reviews`](#settings).
+The status line reads `4 to review`, or `2 PRs ready to merge · 2 to review` when both apply. Turn the line off with [`reviews`](#settings).
 
 **Nothing needs you.** Nothing is ready and nothing waits for your review, so there's no band at all. The prompt sits where it always does.
 
@@ -93,7 +89,7 @@ The status line also shows `N PRs ready to merge` while any are ready. The band 
 
 `/ready-prs` asks GitHub right away instead of waiting for the next check, and answers in the transcript, with a second line for review requests:
 
-![Typing /ready-prs prints the ready PRs in the transcript](docs/images/command.png)
+![Typing /ready-prs prints the ready PRs, then the PRs waiting for your review, in the transcript](docs/images/command.png)
 
 Some example answers:
 
