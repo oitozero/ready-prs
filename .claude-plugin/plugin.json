@@ -1,7 +1,7 @@
 {
   "name": "ready-prs",
-  "version": "1.0.0",
-  "description": "Shows the repository's open pull requests that are ready to merge, just above the prompt",
+  "version": "1.1.0",
+  "description": "Shows the repository's open pull requests that are ready to merge, and the ones waiting for your review, just above the prompt",
   "author": { "name": "Pedro Sampaio" },
   "license": "MIT",
   "keywords": ["github", "pull-requests", "merge", "gh"],
@@ -13,6 +13,19 @@
       "description": "clean: GitHub reports the PR as CLEAN. clean-or-unstable: also count PRs whose only failures are optional checks. approved: CLEAN and approved by a reviewer.",
       "options": ["clean", "clean-or-unstable", "approved"],
       "default": "clean"
+    },
+    "scope": {
+      "type": "string",
+      "title": "Which PRs",
+      "description": "all: every open PR in the repository. mine: only PRs you opened (gh's signed-in account).",
+      "options": ["all", "mine"],
+      "default": "all"
+    },
+    "reviews": {
+      "type": "boolean",
+      "title": "Show review requests",
+      "description": "Add a line for open PRs waiting for your review, and show the band for them even when nothing is ready to merge.",
+      "default": true
     },
     "maxRows": {
       "type": "number",

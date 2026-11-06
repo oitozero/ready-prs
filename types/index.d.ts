@@ -13,8 +13,18 @@ export type PullRequest = {
   reviewDecision: string
 }
 
+/** An open PR that asks the signed-in gh user for a review. */
+export type ReviewRequest = {
+  number: number
+  title: string
+  url: string
+  author: string
+}
+
 export type Snapshot = {
   prs: PullRequest[]
+  /** PRs waiting for the signed-in user's review; [] when the `reviews` setting is off. */
+  reviews: ReviewRequest[]
   /** Milliseconds since the epoch of the last finished check; 0 before the first. */
   checkedAt: number
   isChecking: boolean

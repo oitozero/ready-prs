@@ -1,10 +1,10 @@
 # ready-prs
 
-A [Claude Code](https://claude.com/claude-code) mod that shows your repository's open pull requests that are **ready to merge**, in a small band just above the prompt.
+A [Claude Code](https://claude.com/claude-code) mod that shows your repository's open pull requests that are **ready to merge**, and the ones **waiting for your review**, in a small band just above the prompt.
 
 ![Animation: PRs turn ready and the band above the prompt lists them, /ready-prs checks on demand, and the band disappears once they are merged](docs/images/ready-prs.gif)
 
-The band appears only when something is ready, so it takes no space the rest of the time. It refreshes every two minutes, and `/ready-prs` checks right away. ([Full-resolution MP4](docs/images/ready-prs.mp4))
+The band appears only when something needs you, so it takes no space the rest of the time. It refreshes every two minutes, and `/ready-prs` checks right away. ([Full-resolution MP4](docs/images/ready-prs.mp4))
 
 ## Contents
 
@@ -57,7 +57,7 @@ claude plugin uninstall ready-prs
 
 ## What you'll see
 
-The band has four states.
+The band has five states.
 
 **Some PRs are ready.** A summary line, then one row per ready PR: its number (a link to the PR on GitHub), its title, its branch, and whether it was approved. The status line repeats the count.
 
@@ -67,7 +67,17 @@ The band has four states.
 
 ![Five PRs ready: three rows, then +2 more](docs/images/many-ready.png)
 
-**Nothing is ready.** There's no band at all. The prompt sits where it always does.
+**PRs are waiting for your review.** One extra line, in yellow, under any ready PRs. It links the first three and counts the rest. It shows even when nothing is ready to merge, because a review someone is waiting on is also something to do.
+
+```text
+✓ 1 ready to merge · 2 not ready
+  #42 Add dark mode  feat/dark-mode · approved
+◆ 4 waiting for your review: #51 #53 #54 +1
+```
+
+The status line reads `1 PR ready to merge · 4 to review`. Turn the line off with [`reviews`](#settings).
+
+**Nothing needs you.** Nothing is ready and nothing waits for your review, so there's no band at all. The prompt sits where it always does.
 
 ![No band: only the conversation and the prompt](docs/images/nothing-ready.png)
 
@@ -81,21 +91,25 @@ The status line also shows `N PRs ready to merge` while any are ready. The band 
 
 ## The `/ready-prs` command
 
-`/ready-prs` asks GitHub right away instead of waiting for the next check, and answers in the transcript:
+`/ready-prs` asks GitHub right away instead of waiting for the next check, and answers in the transcript, with a second line for review requests:
 
 ![Typing /ready-prs prints the ready PRs in the transcript](docs/images/command.png)
 
-It answers in one of three ways:
+Some example answers:
 
 ```text
 > /ready-prs
 Ready to merge: #42 Add dark mode; #45 Bump eslint to 9
+Waiting for your review: #51 Rework the session cache; #53 Add rate limits
 ```
 
 ```text
 > /ready-prs
 No open pull requests are ready to merge (4 open).
+Nothing is waiting for your review.
 ```
+
+With `scope` set to `mine`, the count says `(2 of yours open)`. With `reviews` off, the second line is left out.
 
 ```text
 > /ready-prs
@@ -104,10 +118,12 @@ Could not list pull requests: no git remotes found
 
 ## Settings
 
-The mod has three settings. Change them from the config menu (`/config`, under **ready-prs**). Each change reloads the mod with the new values.
+The mod has five settings. Change them from the config menu (`/config`, under **ready-prs**). Each change reloads the mod with the new values.
 
 | Setting | Values | Default | What it does |
 | --- | --- | --- | --- |
+| `scope` | `all`, `mine` | `all` | `mine` lists only PRs you opened (the account `gh` is signed in as). |
+| `reviews` | `true`, `false` | `true` | Adds a line for open PRs waiting for your review, and shows the band for them even when nothing is ready. |
 | `readiness` | `clean`, `clean-or-unstable`, `approved` | `clean` | Which PRs count as ready. See [What "ready" means](#what-ready-means). |
 | `maxRows` | 1 to 10 | `3` | How many ready PRs the band lists before it says `+N more`. |
 | `pollMinutes` | 1 or more | `2` | How often the mod asks GitHub again. |
@@ -119,6 +135,7 @@ You can also set them in `~/.claude/settings.json`, under `pluginConfigs`, keyed
   "pluginConfigs": {
     "ready-prs@ready-prs": {
       "options": {
+        "scope": "mine",
         "readiness": "approved",
         "maxRows": 5,
         "pollMinutes": 5
@@ -128,9 +145,27 @@ You can also set them in `~/.claude/settings.json`, under `pluginConfigs`, keyed
 }
 ```
 
-The mod repairs values that don't make sense instead of failing. An unknown `readiness` falls back to `clean`, `maxRows` is held between 1 and 10, and a `pollMinutes` below 1 goes back to 2.
+The mod repairs values that don't make sense instead of failing. An unknown `scope` falls back to `all`, an unknown `readiness` falls back to `clean`, `maxRows` is held between 1 and 10, and a `pollMinutes` below 1 goes back to 2.
 
 ### Examples
+
+**A busy team repository.** With 30 open PRs, "5 ready to merge" is mostly other people's work, which they'll merge themselves. List only yours, and keep the review line so you also see what teammates are waiting on you for:
+
+```json
+{ "scope": "mine" }
+```
+
+```text
+✓ 1 ready to merge · 1 not ready
+  #42 Add dark mode  feat/dark-mode · approved
+◆ 2 waiting for your review: #51 #53
+```
+
+**Just your merges, no review reminders.** Turn the review line off if you track reviews somewhere else:
+
+```json
+{ "scope": "mine", "reviews": false }
+```
 
 **Your team requires approvals, but branch protection doesn't enforce them.** GitHub reports a PR with green checks as `CLEAN` even if nobody reviewed it. Use the `approved` rule so only reviewed PRs show up:
 
@@ -171,17 +206,22 @@ Draft PRs never count. Beyond that, the mod reads GitHub's `mergeStateStatus` fo
 The whole mod is one hooks module, [`hooks/register.tsx`](hooks/register.tsx):
 
 1. **On `session.start`** it registers `/ready-prs`, checks once a second after startup, then sets a timer for every `pollMinutes`.
-2. **Each check** runs
+2. **Each check** runs two searches at the same time:
 
    ```bash
+   # The PRs the band is about (with scope "mine", plus: --author @me)
    gh pr list --state open --limit 50 \
      --json number,title,url,author,headRefName,isDraft,mergeable,mergeStateStatus,reviewDecision
+
+   # PRs waiting for your review (skipped when reviews is off)
+   gh pr list --state open --limit 50 --search review-requested:@me \
+     --json number,title,url,author
    ```
 
-   and stores the result in the session's state (`$.state`), which survives reloads. Two checks never run at once.
-3. **A `ui.render` hook on `AbovePrompt`** draws the band from that stored result. Each time the state changes, the band redraws. When nothing is ready and `gh` works, the hook passes the spot back to Claude Code (`next(e)`), so the band takes no room.
+   It stores both results in the session's state (`$.state`), which survives reloads. Two checks never run at once. `review-requested:@me` includes reviews requested from a team you're on.
+3. **A `ui.render` hook on `AbovePrompt`** draws the band from that stored result. Each time the state changes, the band redraws. When nothing is ready, nothing waits for your review and `gh` works, the hook passes the spot back to Claude Code (`next(e)`), so the band takes no room.
 
-The mod only reads. It never merges, comments on or changes a PR, and the one command it runs is `gh pr list`.
+The mod only reads. It never merges, comments on, reviews or changes a PR, and the only command it runs is `gh pr list`.
 
 ## Troubleshooting
 
@@ -216,7 +256,7 @@ claude plugin validate .
 claude plugin test .
 ```
 
-The tests in [`tests/band.test.tsx`](tests/band.test.tsx) mock `gh` and the clock. They cover the band on the terminal, desktop, VS Code and mobile surfaces, the `+N more` count, the hidden state, a `gh` failure, and the `approved` and `clean-or-unstable` rules.
+The tests in [`tests/band.test.tsx`](tests/band.test.tsx) mock `gh` and the clock. They cover the band on the terminal, desktop, VS Code and mobile surfaces, the `+N more` count, the hidden state, a `gh` failure, the `approved` and `clean-or-unstable` rules, the `mine` and `all` scopes, and the review line (shown alone, under ready PRs, and turned off).
 
 To type-check, run `tsc -p .`. The `tsconfig.json` extends the types Claude Code writes into `.claude-plugin/types/` once it has loaded the mod.
 
