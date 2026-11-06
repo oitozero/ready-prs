@@ -2,9 +2,9 @@
 
 A [Claude Code](https://claude.com/claude-code) mod that shows your repository's open pull requests that are **ready to merge**, in a small band just above the prompt.
 
-![The ready-prs band above the Claude Code prompt, listing two pull requests ready to merge](docs/images/some-ready.png)
+![Animation: PRs turn ready and the band above the prompt lists them, /ready-prs checks on demand, and the band disappears once they are merged](docs/images/ready-prs.gif)
 
-The band appears only when something is ready, so it takes no space the rest of the time. It refreshes every two minutes, and `/ready-prs` checks right away.
+The band appears only when something is ready, so it takes no space the rest of the time. It refreshes every two minutes, and `/ready-prs` checks right away. ([Full-resolution MP4](docs/images/ready-prs.mp4))
 
 ## Contents
 
@@ -228,7 +228,7 @@ To type-check, run `tsc -p .`. The `tsconfig.json` extends the types Claude Code
 | `hooks/register.tsx` | The mod: polling, the command, the band |
 | `types/index.d.ts` | Types for the stored snapshot (`PluginState`) |
 | `tests/band.test.tsx` | Tests |
-| `docs/images/` | The screenshots in this README (mockups of the terminal) |
+| `docs/images/` | The screenshots and animation in this README (mockups of the terminal) |
 
 ## License
 
