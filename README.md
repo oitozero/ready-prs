@@ -29,7 +29,7 @@ The band appears only when something needs you, so it takes no space the rest of
   ```
 
   The mod looks for `gh` on your `PATH`, then at `/opt/homebrew/bin/gh` and `/usr/local/bin/gh`. That covers sessions the desktop app starts, which may not get Homebrew's folder on their `PATH`.
-- A session started **inside a git repository with a GitHub remote**. The mod asks `gh` about whichever repository the session's folder belongs to.
+- A session started **inside a git repository with a GitHub remote**. The mod asks `gh` about whichever repository the session's folder belongs to. Anywhere else (no git repository, no remote, or only remotes on other hosts) it stays quiet: no band and no error.
 
 ## Install
 
@@ -77,7 +77,7 @@ The status line reads `4 to review`, or `2 PRs ready to merge · 2 to review` wh
 
 ![No band: only the conversation and the prompt](docs/images/nothing-ready.png)
 
-**`gh` failed.** One red line, so a broken setup never looks like "nothing to merge":
+**`gh` failed.** One red line, so a broken setup never looks like "nothing to merge". A folder with no GitHub repository doesn't count as broken: there the band just stays hidden.
 
 ![A red line reading: ready-prs: gh failed: To get started with GitHub CLI, please run: gh auth login](docs/images/gh-failed.png)
 
@@ -107,9 +107,18 @@ Nothing is waiting for your review.
 
 With `scope` set to `mine`, the count says `(2 of yours open)`. With `reviews` off, the second line is left out.
 
+In a folder that isn't a GitHub repository, the band stays hidden and the command says so:
+
 ```text
 > /ready-prs
-Could not list pull requests: no git remotes found
+This folder isn't in a GitHub repository, so there are no pull requests to check.
+```
+
+When `gh` itself fails, the command passes on its error:
+
+```text
+> /ready-prs
+Could not list pull requests: To get started with GitHub CLI, please run:  gh auth login
 ```
 
 ## Settings
@@ -225,8 +234,7 @@ The mod only reads. It never merges, comments on, reviews or changes a PR, and t
 | --- | --- | --- |
 | `gh failed: gh was not found` | `gh` isn't installed, or it's somewhere the mod doesn't look | Install it (`brew install gh`), or start Claude Code from a shell where `gh` works |
 | `gh failed: … gh auth login` | `gh` isn't signed in | Run `gh auth login` |
-| `gh failed: not a git repository` | The session's folder isn't in a git repository | Start the session inside your repository |
-| `gh failed: no git remotes found` | The repository has no GitHub remote | `git remote add origin <url>` |
+| No band at all, and `/ready-prs` says the folder isn't in a GitHub repository | The session's folder has no git repository, no remote, or only non-GitHub remotes. The mod stays quiet on purpose | Start the session inside your GitHub repository, or add a remote: `git remote add origin <url>` |
 | No band, but you expected one | No PR meets the `readiness` rule | Run `/ready-prs` to see how many are open, or try `clean-or-unstable` |
 | A PR you just approved isn't listed yet | The next check hasn't run | Run `/ready-prs` |
 
@@ -252,7 +260,7 @@ claude plugin validate .
 claude plugin test .
 ```
 
-The tests in [`tests/band.test.tsx`](tests/band.test.tsx) mock `gh` and the clock. They cover the band on the terminal, desktop, VS Code and mobile surfaces, the `+N more` count, the hidden state, a `gh` failure, the `approved` and `clean-or-unstable` rules, the `mine` and `all` scopes, and the review line (shown alone, under ready PRs, and turned off).
+The tests in [`tests/band.test.tsx`](tests/band.test.tsx) mock `gh` and the clock. They cover the band on the terminal, desktop, VS Code and mobile surfaces, the `+N more` count, the hidden state, a `gh` failure, the quiet band in folders with no GitHub repository, the `approved` and `clean-or-unstable` rules, the `mine` and `all` scopes, and the review line (shown alone, under ready PRs, and turned off).
 
 To type-check, run `tsc -p .`. The `tsconfig.json` extends the types Claude Code writes into `.claude-plugin/types/` once it has loaded the mod.
 

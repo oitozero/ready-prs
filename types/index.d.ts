@@ -28,6 +28,8 @@ export type Snapshot = {
   /** Milliseconds since the epoch of the last finished check; 0 before the first. */
   checkedAt: number
   isChecking: boolean
+  /** True when the session's folder has no GitHub repository to ask about; the band stays hidden. */
+  noRepo: boolean
   error?: string
 }
 

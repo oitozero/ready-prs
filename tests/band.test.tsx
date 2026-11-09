@@ -89,14 +89,38 @@ test('with nothing ready the band is left to the engine', async ($, on) => {
 })
 
 test('a gh failure shows as one line', async ($, on) => {
-  const clock = setUp(on, { exitCode: 1, stdout: '', stderr: 'not a git repository' })
+  const signedOut = 'To get started with GitHub CLI, please run:  gh auth login'
+  const clock = setUp(on, { exitCode: 4, stdout: '', stderr: signedOut })
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   await clock.advance(5)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  expect((await ui.find({ type: 'Text', text: /gh failed/ }))?.text).toBe('ready-prs: gh failed: not a git repository')
+  expect((await ui.find({ type: 'Text', text: /gh failed/ }))?.text).toBe(`ready-prs: gh failed: ${signedOut}`)
   await ui.unmount()
 })
+
+// gh's exact words, captured from gh 2.x in each kind of folder.
+const noRepoErrors = {
+  'no git repository': 'failed to run git: fatal: not a git repository (or any of the parent directories): .git',
+  'a repository with no remote': 'no git remotes found',
+  'only non-GitHub remotes':
+    'none of the git remotes configured for this repository point to a known GitHub host. To tell gh about a new GitHub host, please use `gh auth login`',
+}
+
+for (const [where, stderr] of Object.entries(noRepoErrors)) {
+  test(`in a folder with ${where}, the band stays hidden and shows no error`, async ($, on) => {
+    const clock = setUp(on, { exitCode: 1, stdout: '', stderr })
+    await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+    await clock.advance(5)
+
+    for (const surface of ['terminal', 'desktop'] as const) {
+      const ui = await $.ui.mount({ ...BAND, surface })
+      expect(await ui.find({ type: 'Text', text: /gh failed/ })).toBeUndefined()
+      expect((await ui.find({ type: 'Text' }))?.text).toBe('engine')
+      await ui.unmount()
+    }
+  })
+}
 
 test('the approved rule leaves out a clean PR nobody approved', { options: { readiness: 'approved' } }, async ($, on) => {
   const stdout = JSON.stringify([

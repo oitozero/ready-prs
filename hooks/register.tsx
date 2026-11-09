@@ -16,12 +16,24 @@ const REVIEW_ARGS = [
 // The review line links this many PRs, then counts the rest.
 const REVIEW_LINKS = 3
 
+// gh's own words when the session's folder has no GitHub repository to ask
+// about: no git repository, a repository with no remote, or only remotes on
+// other hosts. Matched on their opening words, not on the `gh auth login`
+// hint the last one carries, so a real sign-in failure still shows.
+const NO_REPO =
+  /not a git repository|no git remotes found|none of the git remotes configured for this repository point to a known GitHub host/i
+
+/** Whether a gh error only means there is no GitHub repository here. */
+export function isNoRepo(message: string): boolean {
+  return NO_REPO.test(message)
+}
+
 // Bump the tag when Snapshot's fields change: values stored under an older
 // tag outlive a reload and are read as the initial value instead.
 const snapshot = atom(
   { plugin: 'ready-prs', key: 'snapshot' } as const,
-  { prs: [], reviews: [], checkedAt: 0, isChecking: false } as Snapshot,
-  { shape: 'snapshot-2' },
+  { prs: [], reviews: [], checkedAt: 0, isChecking: false, noRepo: false } as Snapshot,
+  { shape: 'snapshot-3' },
 )
 
 /** The `readiness` option: which PRs count as ready to merge. */
@@ -159,12 +171,19 @@ async function refresh($: EngineInterface, settings: Settings): Promise<void> {
       const prs = (JSON.parse(listed) as RawPr[]).map(toPr)
       const reviews = (JSON.parse(requested) as RawPr[]).map(toReview)
       const checkedAt = await $.clock.now()
-      await update($, snapshot, () => ({ prs, reviews, checkedAt, isChecking: false }))
+      await update($, snapshot, () => ({ prs, reviews, checkedAt, isChecking: false, noRepo: false }))
       const ready = prs.filter(pr => isReady(pr, settings.rule)).length
       $.ui.status(statusText(ready, reviews.length))
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err)
       const checkedAt = await $.clock.now()
+      if (isNoRepo(error)) {
+        // Nothing has gone wrong: there is just no GitHub repository here.
+        // Empty lists and no error leave the band hidden and the status clear.
+        await update($, snapshot, () => ({ prs: [], reviews: [], checkedAt, isChecking: false, noRepo: true }))
+        $.ui.status(undefined)
+        return
+      }
       // Keep the last good lists on screen; the error line says they are stale.
       await update($, snapshot, s => ({ ...s, checkedAt, isChecking: false, error }))
     }
@@ -192,7 +211,8 @@ export const register: Register = (on, options) => {
 
   on('command.run', { command: 'ready-prs' }, async $ => {
     await refresh($, settings)
-    const { prs, reviews, error } = await read($, snapshot)
+    const { prs, reviews, noRepo, error } = await read($, snapshot)
+    if (noRepo) return { text: "This folder isn't in a GitHub repository, so there are no pull requests to check." }
     if (error) return { text: `Could not list pull requests: ${error}` }
     const ready = readyIn(prs)
     const open = scope === 'mine' ? `${prs.length} of yours open` : `${prs.length} open`

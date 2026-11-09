@@ -1,6 +1,6 @@
 {
   "name": "ready-prs",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Shows the repository's open pull requests that are ready to merge, and the ones waiting for your review, just above the prompt",
   "author": { "name": "Pedro Sampaio" },
   "license": "MIT",
